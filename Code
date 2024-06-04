@@ -1,0 +1,124 @@
+// Define pins for sensors, LCD, buzzer and fan
+#define DHTPIN 3
+#define MQ2PIN A4
+#define FLAMEPIN A3
+#define BUZZERPIN 2
+#define FANPIN 13
+#define RS 10
+#define EN 9
+#define D4 4
+#define D5 6
+#define D6 7
+#define D7 8
+
+// Include libraries for DHT and LCD
+#include <DHT.h>
+#include <LiquidCrystal.h>
+
+// Define DHT type and create DHT object
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// Create LCD object
+LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
+
+// Define thresholds for temperature, smoke and flame
+#define TEMP_THRESHOLD 30
+#define SMOKE_THRESHOLD 400
+#define FLAME_THRESHOLD 0
+
+void setup() {
+  // Initialize serial monitor
+  Serial.begin(9600);
+  
+  // Initialize DHT sensor
+  dht.begin();
+  
+  // Initialize LCD with 16 columns and 2 rows
+  lcd.begin(16, 2);
+  
+  // Set pin modes for MQ2, flame, buzzer and fan
+  pinMode(MQ2PIN, INPUT);
+  pinMode(FLAMEPIN, INPUT);
+  pinMode(BUZZERPIN, OUTPUT);
+  pinMode(FANPIN, OUTPUT);
+}
+
+void loop() {
+  // Read temperature and humidity from DHT sensor
+  float temp = dht.readTemperature();
+  float hum = dht.readHumidity();
+  
+  // Read smoke level from MQ2 sensor
+  int smoke = analogRead(MQ2PIN);
+  
+  // Read flame status from flame sensor
+  int flame = digitalRead(FLAMEPIN);
+  
+  // Print sensor readings to serial monitor
+  Serial.print("Temperature: ");
+  Serial.print(temp);
+  Serial.println(" C");
+  
+  Serial.print("Humidity: ");
+  Serial.print(hum);
+  Serial.println(" %");
+  
+  Serial.print("Smoke: ");
+  Serial.println(smoke);
+  
+  Serial.print("Flame: ");
+  Serial.println(flame);
+  
+  // Display temperature and humidity on LCD
+  lcd.setCursor(0,0);
+  lcd.print("Temp: ");
+  lcd.print(temp);
+  lcd.print(" C");
+  
+  lcd.setCursor(0,1);
+  lcd.print("Hum: ");
+  lcd.print(hum);
+  lcd.print(" %");
+  
+   // Check if temperature is above threshold
+   if (temp > TEMP_THRESHOLD) {
+    // Turn on fan
+    digitalWrite(FANPIN, HIGH);
+    
+    // Check if temperature is above another threshold
+    if (temp > TEMP_THRESHOLD +5) {
+      // Turn on buzzer for one second
+      tone(BUZZERPIN,500,1000); 
+    }
+   }
+   else {
+    // Turn off fan
+    digitalWrite(FANPIN, LOW); 
+   }
+   
+   // Check if smoke is above threshold
+   if (smoke > SMOKE_THRESHOLD) {
+    // Turn on buzzer for one second
+    tone(BUZZERPIN,500,1000);
+    
+    // Display smoke level on LCD
+    lcd.setCursor(0,1);
+    lcd.print("Smoke: ");
+    lcd.print(smoke); 
+   }
+   
+   // Check if flame is detected
+   if (flame == FLAME_THRESHOLD) {
+    // Turn on buzzer for one second
+    tone(BUZZERPIN,500,1000);
+    
+    // Display flame status on LCD
+    lcd.setCursor(0,1);
+    lcd.print("Flame: ");
+    lcd.print(flame); 
+   }
+   
+   // Wait for one second before next reading
+   delay(1000);
+}
